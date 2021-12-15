@@ -3,16 +3,18 @@ import {
   Component,
   ElementRef,
   OnDestroy,
-  OnInit,
   ViewChild,
 } from '@angular/core';
-import { from, fromEvent, Subscription } from 'rxjs';
+import { EMPTY, from, fromEvent, Subscription } from 'rxjs';
 import {
-  mergeMap,
   throttleTime,
   switchMap,
   tap,
   map,
+  debounceTime,
+  pluck,
+  distinctUntilChanged,
+  filter,
   concatMap,
 } from 'rxjs/operators';
 import { DataService } from './data.service';
@@ -24,49 +26,87 @@ import { User } from './user.interface';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
-export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
+export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('button') button: ElementRef;
+  @ViewChild('input') input: ElementRef;
 
-  postsWithUsers: Array<{post: Post, user: User}> = [];
+  postsWithUsers: Array<{ post: Post; user: User }> = [];
+  error: string = '';
+
+  private inputSub: Subscription;
   private buttonSub: Subscription;
 
   constructor(private dataService: DataService) {}
-
-  ngOnInit() {}
 
   ngAfterViewInit() {
     this.buttonSub = fromEvent(this.button.nativeElement, 'click')
       .pipe(
         throttleTime(3000),
-        tap(() => console.log('Trigger getPosts()')),
+        tap(() => this.empty()),
         switchMap(() => this.dataService.getPosts()),
-        mergeMap(
-          (posts: Post[]) =>
-            from(posts).pipe(
-              mergeMap((post: Post) =>
-                this.dataService.getUser(post.userId).pipe(
-                  map((user: User) => {
-                    return {post: post, user: user};
-                  })
-                )
+        concatMap((posts: Post[]) =>
+          from(posts).pipe(
+            concatMap((post: Post) =>
+              this.dataService.getUser(post.userId).pipe(
+                map((user: User) => {
+                  return { post: post, user: user };
+                })
               )
             )
+          )
         )
       )
-      .subscribe((data) => {
-        this.postsWithUsers.push(data);
+      .subscribe((postWithUser) => {
+        this.postsWithUsers.push(postWithUser);
+      });
+
+    this.inputSub = fromEvent(this.input.nativeElement, 'input')
+      .pipe(
+        debounceTime(500),
+        pluck('target', 'value'),
+        distinctUntilChanged(),
+        tap(() => this.empty()),
+        tap((id: number) => {
+          if (!this.validIds(id))
+            this.error = 'Error: Please enter a valid id between 0 and 99!';
+        }),
+        filter((id: number) => this.validIds(id)),
+        switchMap((id: number) => {
+          return id
+            ? this.dataService.getPost(id.toString()).pipe(
+                switchMap((post: Post) =>
+                  this.dataService.getUser(post.userId).pipe(
+                    map((user: User) => {
+                      return { post: post, user: user };
+                    })
+                  )
+                )
+              )
+            : EMPTY;
+        })
+      )
+      .subscribe({
+        next: (postWithUser) => {
+          console.log(postWithUser);
+          this.postsWithUsers.push(postWithUser);
+        },
+        error: (error) => {
+          this.error = error.message;
+        },
       });
   }
 
   ngOnDestroy() {
     this.buttonSub.unsubscribe();
+    this.inputSub.unsubscribe();
+  }
+
+  private empty() {
+    this.postsWithUsers = [];
+    this.error = '';
+  }
+
+  private validIds(id: number): boolean {
+    return id >= 0 && id < 100;
   }
 }
-
-// Nur rxjs Observables verwenden (button, input)
-
-// Wenn user clickt Button -> get https://jsonplaceholder.typicode.com/posts
-// -> Return posts und zusätzlich User Object über https://jsonplaceholder.typicode.com/users/${userId}
-
-// Bonus:
-// Wenn user in Input field eine Id eingibt, dann wird nur der eine Posts angezeigt https://jsonplaceholder.typicode.com/posts/${postId}

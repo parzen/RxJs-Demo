@@ -26,7 +26,7 @@ export class DataService {
   }
 
   getPost(id: string) {
-    return this.http.get<Post>(API_URL + `/post/${id}`);
+    return this.http.get<Post>(API_URL + `/posts/${id}`);
   }
 
   getUsers() {

@@ -2,8 +2,13 @@
 <p>
   <button #button>Get Posts</button>
 </p>
+<p class="row">
+  <span>Get single post per id:</span>
+  <input type="number" placeholder="Type id" #input />
+  <span class="error" *ngIf="error">{{ error }}</span>
+</p>
 <h2 *ngIf="postsWithUsers.length > 0">Posts</h2>
-<ul>
+<ol>
   <li *ngFor="let postWithUser of postsWithUsers">
     <div class="row">
       <div class="user">
@@ -12,4 +17,4 @@
       <div class="post">{{ postWithUser.post.title }}</div>
     </div>
   </li>
-</ul>
+</ol>
