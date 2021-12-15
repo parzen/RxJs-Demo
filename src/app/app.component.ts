@@ -6,8 +6,15 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import { fromEvent, Subscription } from 'rxjs';
-import { mergeMap, throttleTime, switchMap, tap, map } from 'rxjs/operators';
+import { from, fromEvent, Subscription } from 'rxjs';
+import {
+  mergeMap,
+  throttleTime,
+  switchMap,
+  tap,
+  map,
+  concatMap,
+} from 'rxjs/operators';
 import { DataService } from './data.service';
 import { Post } from './post.interface';
 import { User } from './user.interface';
@@ -20,7 +27,7 @@ import { User } from './user.interface';
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('button') button: ElementRef;
 
-  postsWithUser: Array<Post>;
+  postsWithUsers: Array<{post: Post, user: User}> = [];
   private buttonSub: Subscription;
 
   constructor(private dataService: DataService) {}
@@ -32,17 +39,23 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       .pipe(
         throttleTime(3000),
         tap(() => console.log('Trigger getPosts()')),
-        switchMap(() => {
-          return this.dataService.getPosts()
-        }),
-        mergeMap((posts) => {
-          console.log(posts);
-          return this.dataService.getPosts();
-        })
+        switchMap(() => this.dataService.getPosts()),
+        mergeMap(
+          (posts: Post[]) =>
+            from(posts).pipe(
+              mergeMap((post: Post) =>
+                this.dataService.getUser(post.userId).pipe(
+                  map((user: User) => {
+                    return {post: post, user: user};
+                  })
+                )
+              )
+            )
+        )
       )
       .subscribe((data) => {
-          this.postsWithUser = data;
-        });
+        this.postsWithUsers.push(data);
+      });
   }
 
   ngOnDestroy() {

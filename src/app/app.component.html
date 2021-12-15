@@ -2,6 +2,14 @@
 <p>
   <button #button>Get Posts</button>
 </p>
+<h2 *ngIf="postsWithUsers.length > 0">Posts</h2>
 <ul>
-  <li *ngFor="let post of postsWithUser">{{post | json}}</li>
+  <li *ngFor="let postWithUser of postsWithUsers">
+    <div class="row">
+      <div class="user">
+        {{ postWithUser.user.name }} ({{ postWithUser.user.username }}):
+      </div>
+      <div class="post">{{ postWithUser.post.title }}</div>
+    </div>
+  </li>
 </ul>

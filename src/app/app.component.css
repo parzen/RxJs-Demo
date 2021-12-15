@@ -1,3 +1,16 @@
 p {
   font-family: Lato;
 }
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.user {
+  font-weight: bold;
+}
+
+.post {
+  font-style: italic;
+}
