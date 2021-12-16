@@ -68,7 +68,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         tap(() => this.empty()),
         tap((id: number) => {
           if (!this.validIds(id))
-            this.error = 'Error: Please enter a valid id between 0 and 99!';
+            this.error = 'Error: Please enter a valid id between 1 and 100!';
         }),
         filter((id: number) => this.validIds(id)),
         switchMap((id: number) => {
@@ -87,7 +87,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       )
       .subscribe({
         next: (postWithUser) => {
-          console.log(postWithUser);
           this.postsWithUsers.push(postWithUser);
         },
         error: (error) => {
@@ -107,6 +106,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   private validIds(id: number): boolean {
-    return id >= 0 && id < 100;
+    return id > 0 && id <= 100;
   }
 }
