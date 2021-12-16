@@ -8,13 +8,14 @@
   <span class="error" *ngIf="error">{{ error }}</span>
 </p>
 <h2 *ngIf="postsWithUsers.length > 0">Posts</h2>
-<ol>
+<ul>
   <li *ngFor="let postWithUser of postsWithUsers">
     <div class="row">
+      <span>{{ postWithUser.post.id }}:</span>
       <div class="user">
         {{ postWithUser.user.name }} ({{ postWithUser.user.username }}):
       </div>
       <div class="post">{{ postWithUser.post.title }}</div>
     </div>
   </li>
-</ol>
+</ul>

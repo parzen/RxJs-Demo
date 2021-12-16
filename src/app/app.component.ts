@@ -44,7 +44,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         throttleTime(3000),
         tap(() => this.empty()),
         switchMap(() => this.dataService.getPosts()),
-        concatMap((posts: Post[]) =>
+        switchMap((posts: Post[]) =>
           from(posts).pipe(
             concatMap((post: Post) =>
               this.dataService.getUser(post.userId).pipe(
