@@ -5,7 +5,7 @@ import {
   OnDestroy,
   ViewChild,
 } from '@angular/core';
-import { EMPTY, from, fromEvent, Subscription } from 'rxjs';
+import { EMPTY, from, fromEvent, Subject, Subscription } from 'rxjs';
 import {
   throttleTime,
   switchMap,
@@ -16,6 +16,8 @@ import {
   distinctUntilChanged,
   filter,
   concatMap,
+share,
+takeUntil,
 } from 'rxjs/operators';
 import { DataService } from './data.service';
 import { Post } from './post.interface';
@@ -33,13 +35,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   postsWithUsers: Array<{ post: Post; user: User }> = [];
   error: string = '';
 
-  private inputSub: Subscription;
-  private buttonSub: Subscription;
+  private stop$ = new Subject<void>();
 
   constructor(private dataService: DataService) {}
 
   ngAfterViewInit() {
-    this.buttonSub = fromEvent(this.button.nativeElement, 'click')
+    fromEvent(this.button.nativeElement, 'click')
       .pipe(
         throttleTime(3000),
         tap(() => this.cleanUp()),
@@ -54,13 +55,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
               )
             )
           )
-        )
+        ),
+        takeUntil(this.stop$)
       )
       .subscribe((postWithUser) => {
         this.postsWithUsers.push(postWithUser);
       });
 
-    this.inputSub = fromEvent(this.input.nativeElement, 'input')
+    fromEvent(this.input.nativeElement, 'input')
       .pipe(
         debounceTime(500),
         pluck('target', 'value'),
@@ -83,7 +85,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
                 )
               )
             : EMPTY;
-        })
+        }),
+        takeUntil(this.stop$)
       )
       .subscribe({
         next: (postWithUser) => {
@@ -96,8 +99,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.buttonSub.unsubscribe();
-    this.inputSub.unsubscribe();
+    this.stop$.next();
+    this.stop$.complete();
   }
 
   private cleanUp() {
