@@ -42,7 +42,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.buttonSub = fromEvent(this.button.nativeElement, 'click')
       .pipe(
         throttleTime(3000),
-        tap(() => this.empty()),
+        tap(() => this.cleanUp()),
         switchMap(() => this.dataService.getPosts()),
         switchMap((posts: Post[]) =>
           from(posts).pipe(
@@ -65,12 +65,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         debounceTime(500),
         pluck('target', 'value'),
         distinctUntilChanged(),
-        tap(() => this.empty()),
+        tap(() => this.cleanUp()),
         tap((id: number) => {
-          if (!this.validIds(id))
+          if (!this.isValidId(id))
             this.error = 'Error: Please enter a valid id between 1 and 100!';
         }),
-        filter((id: number) => this.validIds(id)),
+        filter((id: number) => this.isValidId(id)),
         switchMap((id: number) => {
           return id
             ? this.dataService.getPost(id.toString()).pipe(
@@ -100,12 +100,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.inputSub.unsubscribe();
   }
 
-  private empty() {
+  private cleanUp() {
     this.postsWithUsers = [];
     this.error = '';
   }
 
-  private validIds(id: number): boolean {
+  private isValidId(id: number): boolean {
     return id > 0 && id <= 100;
   }
 }
